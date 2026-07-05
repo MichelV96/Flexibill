@@ -5,9 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Nodig voor IHttpContextAccessor/HttpContext in Authentication/HttpContextCurrentUserContext.cs.
-         Infrastructure is een gewone classlib (Microsoft.NET.Sdk), dus deze FrameworkReference moet
-         expliciet - anders is het ASP.NET Core shared framework niet beschikbaar. -->
+    <!-- Nodig voor AuthenticationStateProvider (Microsoft.AspNetCore.Components.Authorization) in
+         Authentication/AuthenticationStateCurrentUserContext.cs. Infrastructure is een gewone
+         classlib (Microsoft.NET.Sdk), dus deze FrameworkReference moet expliciet - anders is het
+         ASP.NET Core/Blazor shared framework niet beschikbaar. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

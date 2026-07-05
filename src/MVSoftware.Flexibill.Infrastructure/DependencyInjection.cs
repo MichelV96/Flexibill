@@ -24,7 +24,7 @@ namespace MVSoftware.Flexibill.Infrastructure;
 /// volgende stap.
 ///
 /// LET OP: <see cref="ICurrentUserContext"/> wordt hier BEWUST niet geregistreerd - Web en
-/// Worker hebben elk hun eigen implementatie nodig (<c>HttpContextCurrentUserContext</c>
+/// Worker hebben elk hun eigen implementatie nodig (<c>AuthenticationStateCurrentUserContext</c>
 /// resp. <see cref="SystemCurrentUserContext"/>, Technisch Ontwerp hoofdstuk 6.3 punt 2) en
 /// registreren die zelf in hun eigen <c>Program.cs</c>.
 /// </summary>

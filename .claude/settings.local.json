@@ -30,7 +30,9 @@
       "Bash(timeout 40 dotnet run --project src/MVSoftware.Flexibill.Web --no-launch-profile)",
       "Bash(ASPNETCORE_ENVIRONMENT=Development timeout 40 dotnet run --project src/MVSoftware.Flexibill.Web --no-launch-profile)",
       "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Name FROM Organizations; SELECT Email FROM Users; SELECT Name FROM Suppliers;\" -C)",
-      "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Type, ProcessedOnUtc FROM OutboxMessages;\" -C)"
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Type, ProcessedOnUtc FROM OutboxMessages;\" -C)",
+      "Bash(ASPNETCORE_ENVIRONMENT=Development timeout 25 dotnet run --project src/MVSoftware.Flexibill.Web --no-launch-profile)",
+      "Bash(mkdir -p \"C:/Users/menee/source/repos/Flexibill/.claude\")"
     ]
   }
 }

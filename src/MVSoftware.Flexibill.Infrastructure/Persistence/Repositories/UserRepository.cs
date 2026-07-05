@@ -10,8 +10,13 @@ public sealed class UserRepository(FlexibillDbContext dbContext) : IUserReposito
 {
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
     {
+        // RequestOtpCommand/ValidateOtpCommand roepen dit aan VOORDAT er een ingelogde gebruiker
+        // (en dus een OrganizationId) bestaat - dat is precies het doel van deze lookup, de
+        // gebruiker (en daarmee zijn tenant) vinden op basis van e-mailadres. De "Tenant"-
+        // queryfilter (hoofdstuk 4.1) zou hier ICurrentUserContext.OrganizationId nodig hebben,
+        // wat op dit punt nog niet bestaat - vandaar bewust IgnoreQueryFilters().
         var target = EmailAddress.Of(email);
-        return dbContext.Users.FirstOrDefaultAsync(u => u.Email == target, cancellationToken);
+        return dbContext.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == target, cancellationToken);
     }
 
     public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken) =>

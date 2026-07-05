@@ -26,7 +26,7 @@ var host = new HostBuilder()
         services.AddFlexibillInfrastructure(sqlConnectionString);
         services.AddSingleton<IAuditSourceProvider>(new FixedAuditSourceProvider(AuditSource.Worker));
 
-        // De Worker heeft geen HttpContext - "SystemPrincipal" i.p.v. HttpContextCurrentUserContext
+        // De Worker heeft geen HttpContext - "SystemPrincipal" i.p.v. AuthenticationStateCurrentUserContext
         // (Technisch Ontwerp, hoofdstuk 6.3 punt 2). Zonder specifieke tenant: prima voor
         // tenant-onafhankelijk werk zoals de outbox-verwerking hieronder.
         services.AddScoped<ICurrentUserContext>(_ => new SystemCurrentUserContext());

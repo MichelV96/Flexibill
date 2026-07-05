@@ -20,7 +20,7 @@ namespace MVSoftware.Flexibill.Infrastructure.Persistence;
 /// (net als <see cref="FlexibillDbContextFactory"/>) i.p.v. ze uit de DI-container op te halen:
 /// het opstarten gebeurt in een handmatig aangemaakte scope zonder HttpContext, en
 /// `AddFlexibillInfrastructure` registreert <c>AuditInterceptor</c> zo dat die (indirect, via
-/// <see cref="ICurrentUserContext"/>) de request-gebonden <c>HttpContextCurrentUserContext</c>
+/// <see cref="ICurrentUserContext"/>) de request-gebonden <c>AuthenticationStateCurrentUserContext</c>
 /// nodig heeft - die gooit dan een exception, ook al gebruikt deze klasse zelf al een <see
 /// cref="SystemCurrentUserContext"/> voor de DbContext-constructor. Door zelf te bouwen wordt
 /// die hele DI-keten (en dus het HttpContext-probleem) vermeden (Technisch Ontwerp, hoofdstuk 18:

@@ -7,7 +7,7 @@ namespace MVSoftware.Flexibill.Infrastructure.Persistence;
 /// Triviale <see cref="ICurrentUserContext"/>-stub voor plekken zonder ingelogde gebruiker/
 /// HttpContext: EF Core-migraties (design-time), de development-seed (<see cref="DbInitializer"/>),
 /// en - als "SystemPrincipal" (Technisch Ontwerp, hoofdstuk 6.3 punt 2) - de Worker, die geen
-/// HttpContext heeft en dus niet <c>HttpContextCurrentUserContext</c> kan gebruiken. Zonder
+/// HttpContext heeft en dus niet <c>AuthenticationStateCurrentUserContext</c> kan gebruiken. Zonder
 /// argumenten (zoals de Worker hem registreert) is dit bewust geen specifieke tenant: prima
 /// voor tenant-onafhankelijk werk zoals de <see cref="OutboxProcessor"/>, maar nog niet geschikt
 /// zodra de Worker zelf tenant-gebonden business-commands gaat uitvoeren (dan is per-bericht

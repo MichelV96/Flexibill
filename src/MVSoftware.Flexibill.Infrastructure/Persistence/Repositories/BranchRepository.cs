@@ -18,4 +18,14 @@ public sealed class BranchRepository(FlexibillDbContext dbContext) : IBranchRepo
         dbContext.Branches.Add(branch);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task UpdateAsync(Branch branch, CancellationToken cancellationToken)
+    {
+        if (dbContext.Entry(branch).State == EntityState.Detached)
+        {
+            dbContext.Branches.Update(branch);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

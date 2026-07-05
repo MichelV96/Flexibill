@@ -1,0 +1,173 @@
+@page "/administration/branches"
+@attribute [Authorize(Roles = nameof(UserRole.Administrator))]
+@using MediatR
+@using MVSoftware.Flexibill.Application.Branches.Commands
+@using MVSoftware.Flexibill.Application.Branches.Queries
+@using MVSoftware.Flexibill.Application.Common
+@using MVSoftware.Flexibill.Domain.Users
+@inject ISender Mediator
+@inject ISnackbar Snackbar
+@rendermode InteractiveServer
+
+@* Interactive Server (Technisch Ontwerp, hoofdstuk 7.1): het in-/uitklappen van het
+   aanmaak-/bewerkpaneel vraagt om live interactie, net als Users.razor. *@
+
+<PageTitle>Vestigingen - Flexibill</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">Vestigingen</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddBusiness"
+               OnClick="StartCreate">
+        Vestiging toevoegen
+    </MudButton>
+</div>
+
+@if (_formVisible)
+{
+    <MudPaper Class="pa-4 mb-4" Outlined="true">
+        <MudText Typo="Typo.subtitle1" Class="mb-3">@(_editingBranchId is null ? "Nieuwe vestiging" : "Vestiging bewerken")</MudText>
+
+        @if (_formError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">@_formError</MudAlert>
+        }
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_name" Label="Naam" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_street" Label="Straat" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_houseNumber" Label="Huisnummer" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_postalCode" Label="Postcode" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_city" Label="Plaats" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+
+        <div class="d-flex gap-2 mt-4">
+            <MudButton Variant="Variant.Text" OnClick="CancelForm">Annuleren</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitFormAsync">
+                @(_editingBranchId is null ? "Aanmaken" : "Opslaan")
+            </MudButton>
+        </div>
+    </MudPaper>
+}
+
+@if (_branches is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="_branches" Hover="true">
+        <HeaderContent>
+            <MudTh>Naam</MudTh>
+            <MudTh>Adres</MudTh>
+            <MudTh>Boekhoudkoppeling</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Naam">@context.Name</MudTd>
+            <MudTd DataLabel="Adres">@FormatAddress(context)</MudTd>
+            <MudTd DataLabel="Boekhoudkoppeling">
+                <MudChip T="string" Color="@(context.IsAccountingConnected ? Color.Success : Color.Default)" Size="Size.Small">
+                    @(context.IsAccountingConnected ? "Gekoppeld" : "Niet gekoppeld")
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudButton Size="Size.Small" OnClick="() => StartEdit(context)">Bewerken</MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private IReadOnlyList<BranchAdminSummaryDto>? _branches;
+
+    private bool _formVisible;
+    private Guid? _editingBranchId;
+    private string _name = string.Empty;
+    private string _street = string.Empty;
+    private string _houseNumber = string.Empty;
+    private string _postalCode = string.Empty;
+    private string _city = string.Empty;
+    private string? _formError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _branches = await Mediator.Send(new GetBranchesAdminOverviewQuery());
+    }
+
+    private static string FormatAddress(BranchAdminSummaryDto branch) =>
+        string.IsNullOrWhiteSpace(branch.Street) && string.IsNullOrWhiteSpace(branch.City)
+            ? "—"
+            : $"{branch.Street} {branch.HouseNumber}, {branch.PostalCode} {branch.City}".Trim();
+
+    private void StartCreate()
+    {
+        _editingBranchId = null;
+        _name = string.Empty;
+        _street = string.Empty;
+        _houseNumber = string.Empty;
+        _postalCode = string.Empty;
+        _city = string.Empty;
+        _formError = null;
+        _formVisible = true;
+    }
+
+    private void StartEdit(BranchAdminSummaryDto branch)
+    {
+        _editingBranchId = branch.Id;
+        _name = branch.Name;
+        _street = branch.Street ?? string.Empty;
+        _houseNumber = branch.HouseNumber ?? string.Empty;
+        _postalCode = branch.PostalCode ?? string.Empty;
+        _city = branch.City ?? string.Empty;
+        _formError = null;
+        _formVisible = true;
+    }
+
+    private void CancelForm() => _formVisible = false;
+
+    private async Task SubmitFormAsync()
+    {
+        _formError = null;
+
+        var result = _editingBranchId is null
+            ? await CreateAsync()
+            : await UpdateAsync(_editingBranchId.Value);
+
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error;
+            return;
+        }
+
+        Snackbar.Add(_editingBranchId is null ? "Vestiging aangemaakt." : "Vestiging bijgewerkt.", Severity.Success);
+        _formVisible = false;
+        await LoadAsync();
+    }
+
+    private Task<Result> CreateAsync() =>
+        MapToResultAsync(Mediator.Send(new CreateBranchCommand(_name, _street, _houseNumber, _postalCode, _city)));
+
+    private Task<Result> UpdateAsync(Guid branchId) =>
+        Mediator.Send(new UpdateBranchCommand(branchId, _name, _street, _houseNumber, _postalCode, _city));
+
+    private static async Task<Result> MapToResultAsync(Task<Result<Guid>> createTask)
+    {
+        var result = await createTask;
+        return result.IsSuccess ? Result.Success() : Result.Failure(result.Error!);
+    }
+}

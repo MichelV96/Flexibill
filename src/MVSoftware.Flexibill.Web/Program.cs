@@ -24,11 +24,6 @@ var sqlConnectionString = builder.Configuration.GetConnectionString("FlexibillDa
 builder.Services.AddFlexibillInfrastructure(sqlConnectionString);
 builder.Services.AddSingleton<IAuditSourceProvider>(new FixedAuditSourceProvider(AuditSource.Web));
 
-// De Web App is de enige host met een HttpContext (Technisch Ontwerp, hoofdstuk 6.3 punt 2) -
-// de Worker registreert zijn eigen ICurrentUserContext (SystemCurrentUserContext).
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
-
 // Wachtwoordloze cookie-authenticatie na een geslaagde OTP-validatie
 // (Technisch Ontwerp, hoofdstuk 9.1). Geen "onthoud mij" (FO 4.2): een relatief
 // korte sliding expiration in plaats van een persistent cookie.
@@ -42,13 +37,20 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 
+// De Web App is de enige host met authenticatiestatus (Technisch Ontwerp, hoofdstuk 6.3 punt 2) -
+// de Worker registreert zijn eigen ICurrentUserContext (SystemCurrentUserContext). Via
+// AuthenticationStateProvider i.p.v. IHttpContextAccessor: die laatste is onbetrouwbaar zodra een
+// `@rendermode InteractiveServer`-component over de SignalR-circuit gaat renderen (zie
+// AuthenticationStateCurrentUserContext voor de volledige toelichting).
+builder.Services.AddScoped<ICurrentUserContext, AuthenticationStateCurrentUserContext>();
+
 var app = builder.Build();
 
 // Alleen in Development: migraties toepassen + demodata seeden (Technisch Ontwerp,
 // hoofdstuk 18 - in productie lopen migraties als aparte pipeline-stap, nooit impliciet
 // bij het opstarten van de app). Rechtstreeks de connection string meegeven i.p.v. via de
-// DI-container op te lossen - dat laatste zou de scoped HttpContextCurrentUserContext
-// triggeren, die buiten een HTTP-request geen HttpContext heeft.
+// DI-container op te lossen - dat laatste zou de scoped AuthenticationStateCurrentUserContext
+// triggeren, die buiten een HTTP-request/circuit geen authenticatiestatus heeft.
 if (app.Environment.IsDevelopment())
 {
     await DbInitializer.MigrateAndSeedAsync(sqlConnectionString, CancellationToken.None);

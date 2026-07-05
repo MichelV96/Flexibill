@@ -42,6 +42,30 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
 
 ## Wat is er al ingevuld
 
+- **Vestigingenbeheerscherm (UC-B2, FO 3.2)** - naam/adres CRUD, naar het patroon van `Users.razor`:
+  - `Application/Branches/Commands/UpdateBranchCommand.cs` + `IBranchRepository.UpdateAsync` (ontbrak
+    nog); `Application/Branches/Queries/GetBranchesAdminOverviewQuery.cs` (rijker dan de bestaande,
+    bewust minimale `GetBranchesOverviewQuery` die de dropdowns elders blijft bedienen).
+  - `Web/Components/Pages/Administration/Branches.razor` (route `/administration/branches`, alleen
+    Administrators) - overzicht + in-/uitklapbaar create/edit-formulier, met een read-only
+    "Boekhoudkoppeling"-statuschip. De boekhoudkoppeling zelf (UC-B3 - pakket kiezen, OAuth,
+    stamdatasynchronisatie) is bewust **niet** meegenomen, aparte grotere feature voor later.
+  - Navigatielink "Vestigingen" toegevoegd in `MainLayout.razor`.
+- **Twee bugfixes, gevonden tijdens het voor het eerst echt in de browser doorlopen van de login-flow na
+  de EF Core-migratie** (build + unit tests waren al die tijd groen, maar niemand had de UI zelf
+  geopend):
+  - `UserRepository.GetByEmailAsync` gebruikt nu `IgnoreQueryFilters()`: `RequestOtpCommand`/
+    `ValidateOtpCommand` zoeken een gebruiker op e-mailadres **vóórdat** er een ingelogde
+    gebruiker (en dus een `OrganizationId` voor de tenant-queryfilter) bestaat - een kip-en-ei-
+    probleem dat elke inlogpoging deed crashen.
+  - `Infrastructure/Authentication/AuthenticationStateCurrentUserContext.cs` vervangt
+    `HttpContextCurrentUserContext`: een `@rendermode InteractiveServer`-component rendert twee keer
+    (eerst tijdens de statische prerender met een echte `HttpContext`, daarna nogmaals zodra de
+    SignalR-circuit het overneemt, wanneer `IHttpContextAccessor.HttpContext` onbetrouwbaar is) - dit
+    liet **elk** ingelogd interactief scherm crashen (Dashboard, Gebruikers, Fiatering, Vestigingen).
+    De nieuwe implementatie leest de claims via `AuthenticationStateProvider`
+    (`AddCascadingAuthenticationState()`, al aanwezig), die .NET 8 juist ontworpen heeft om correct
+    over beide renderfases heen te werken.
 - **EF Core-persistence, multi-tenancy, audit-trail en transactional outbox (Technisch Ontwerp hoofdstuk
   3.1, 3.3, 4, 6.3, 12, 15)** - vervangt alle vijf `InMemory*`-repositories en het handmatige
   `PublishDomainEventsAsync`-mechanisme:
@@ -70,7 +94,7 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
     geprobeerd.
   - Omdat de Worker nu zelf de DbContext gebruikt (voor de outbox), heeft die een eigen
     `ICurrentUserContext` nodig - `SystemCurrentUserContext` (Technisch Ontwerp hoofdstuk 6.3 punt 2,
-    "SystemPrincipal"), i.p.v. de request-gebonden `HttpContextCurrentUserContext` die alleen de Web App
+    "SystemPrincipal"), i.p.v. de request-gebonden `AuthenticationStateCurrentUserContext` die alleen de Web App
     gebruikt. Beide hosts registreren dit voortaan zelf in hun eigen `Program.cs` (niet meer in
     `AddFlexibillInfrastructure`).
   - `AuditInterceptor.cs` - legt wijzigingen aan `IAuditable`-aggregates vast in de `AuditLog`-tabel, in
@@ -175,7 +199,7 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
   - `Application/Dashboard/Queries/GetDashboardQuery.cs` - bouwt de dashboardkaarten op basis van rol;
     kaarten die nog niet aan een repository gekoppeld kunnen worden (mislukte exports, openstaande
     fiatteringen, ...) staan expliciet op `null` met een TODO, in plaats van een misleidende "0".
-  - `Infrastructure/Authentication/HttpContextCurrentUserContext.cs` - de ingelogde gebruiker afgeleid uit
+  - `Infrastructure/Authentication/AuthenticationStateCurrentUserContext.cs` - de ingelogde gebruiker afgeleid uit
     de claims; `IOrganizationRepository`/`ISupplierRepository` zijn inmiddels EF Core-implementaties (zie
     de EF Core-persistence-bullet hierboven), destijds nog in-memory.
   - `Web/Components/Pages/Home.razor` (route `/`) - **Interactive Server** (i.t.t. de Login-pagina's:
@@ -193,11 +217,10 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
    en de bijbehorende schermen (facturenoverzicht, factuurverwerking, fiattering).
 3. Uitnodigingsmail daadwerkelijk versturen vanuit `InviteUserCommand` (nu alleen een TODO); een
    acceptatie-/eerste-login-ervaring voor nieuw uitgenodigde gebruikers.
-4. Een vestigingenoverzicht/-beheerscherm (`CreateBranchCommand` bestaat al, maar heeft nog geen UI) -
-   nu kiest `ApprovalFlow.razor` bij ontbrekend `branchId`-queryparameter automatisch de eerste vestiging.
-5. `AuthorizationBehavior`/`PerformanceBehavior` (Technisch Ontwerp hoofdstuk 6.3) - vergen een
+4. `AuthorizationBehavior`/`PerformanceBehavior` (Technisch Ontwerp hoofdstuk 6.3) - vergen een
    `IRequireRole`-marker per command resp. staan los van de EF Core-laag, bewust apart gehouden.
-6. De overige use cases: boekhoudkoppeling-connectors, OCR-verwerking, declaraties, inkoopmanagement.
+5. De overige use cases: boekhoudkoppeling-connectors (incl. UC-B3 - pakket kiezen, OAuth,
+   stamdatasynchronisatie per vestiging), OCR-verwerking, declaraties, inkoopmanagement.
 
 ## Lokaal proberen
 
