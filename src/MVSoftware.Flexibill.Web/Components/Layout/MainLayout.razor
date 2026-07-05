@@ -1,0 +1,32 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h6" Class="mr-6">Flexibill</MudText>
+        <AuthorizeView>
+            <Authorized>
+                <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit">Dashboard</MudButton>
+                <AuthorizeView Roles="Administrator" Context="adminContext">
+                    <Authorized>
+                        <MudButton Href="/administration/users" Variant="Variant.Text" Color="Color.Inherit">Gebruikers</MudButton>
+                        <MudButton Href="/administration/approval-flow" Variant="Variant.Text" Color="Color.Inherit">Fiatering</MudButton>
+                    </Authorized>
+                </AuthorizeView>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+    <MudMainContent Class="pa-4">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

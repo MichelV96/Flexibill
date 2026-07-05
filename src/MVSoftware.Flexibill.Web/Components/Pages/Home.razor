@@ -1,0 +1,87 @@
+@page "/"
+@attribute [Authorize]
+@using MediatR
+@using MVSoftware.Flexibill.Application.Dashboard.Queries
+@using MVSoftware.Flexibill.Web.Components.Pages.Dashboard
+@inject ISender Mediator
+@rendermode InteractiveServer
+
+@* Interactive Server (Technisch Ontwerp, hoofdstuk 7.1): kaarten kunnen later live
+   bijwerken (bijv. de teller "openstaande fiatteringen") zonder dat de pagina herlaadt. *@
+
+<PageTitle>Dashboard - Flexibill</PageTitle>
+
+@if (_dashboard is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudText Typo="Typo.h4" Class="mb-1">Welkom terug, @_dashboard.DisplayName</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">Flexibill-dashboard</MudText>
+
+    <MudGrid>
+        @if (_dashboard.IsAdministrator)
+        {
+            <DashboardCard Title="Mislukte exports" Value="_dashboard.FailedExportsCount" Severity="Severity.Error" />
+        }
+
+        @if (_dashboard.DraftSuppliersCount is not null)
+        {
+            <DashboardCard Title="Concept-leveranciers te beoordelen" Value="_dashboard.DraftSuppliersCount" />
+        }
+
+        @if (_dashboard.SuppliersWithMissingDataCount is not null)
+        {
+            <DashboardCard Title="Leveranciers met ontbrekende gegevens" Value="_dashboard.SuppliersWithMissingDataCount"
+                           Severity="Severity.Warning" />
+        }
+
+        @if (_dashboard.IsAdministrator)
+        {
+            <DashboardCard Title="Uitgenodigd, nog niet geactiveerd" Value="_dashboard.PendingInvitationsCount" />
+        }
+
+        @if (_dashboard.IsApprover)
+        {
+            <DashboardCard Title="Openstaande fiatteringen" Value="_dashboard.PendingApprovalsCount" />
+        }
+
+        @if (_dashboard.IsExpenseApprover)
+        {
+            <DashboardCard Title="Openstaande declaraties" Value="_dashboard.PendingExpenseApprovalsCount" />
+        }
+
+        @if (_dashboard.IsPurchaseApprover)
+        {
+            <DashboardCard Title="Openstaande inkoopaanvragen" Value="_dashboard.PendingPurchaseRequestsCount" />
+        }
+    </MudGrid>
+
+    @if (_dashboard.IsAdministrator)
+    {
+        <MudPaper Class="pa-4 mt-4" Elevation="0" Outlined="true">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Actieve modules</MudText>
+            @if (_dashboard.ActiveModules.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Geen losse modules actief.</MudText>
+            }
+            else
+            {
+                @foreach (var module in _dashboard.ActiveModules)
+                {
+                    <MudChip T="string" Color="Color.Success" Class="mr-2">@module</MudChip>
+                }
+            }
+        </MudPaper>
+    }
+}
+
+@code {
+    private DashboardDto? _dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dashboard = await Mediator.Send(new GetDashboardQuery());
+    }
+}

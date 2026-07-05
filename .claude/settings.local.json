@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(python3)",
+      "Bash(powershell.exe -Command 'Add-Type -AssemblyName System.IO.Compression; [System.IO.Compression.ZipFile]::ExtractToDirectory\\('\\\\''Technisch-ontwerp-Flexibill.docx'\\\\'', '\\\\''docx_temp'\\\\'', $true\\)')",
+      "Bash(pandoc -t markdown \"Technisch-ontwerp-Flexibill.docx\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -m pip install python-docx --quiet)",
+      "Bash(find / -iname \"Microsoft.EntityFrameworkCore.dll\" 2>/dev/null | grep -i \"10.0.9\" | head -5)",
+      "Bash(mkdir -p /tmp/efcheck)",
+      "Read(//tmp/**)",
+      "Bash(cat)",
+      "Bash(mkdir -p C:/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/efcheck)",
+      "Bash(dotnet run *)",
+      "Bash(dotnet ef *)",
+      "Bash(git mv *)",
+      "Bash(mv src/MVSoftware.Flexibill.Infrastructure/Persistence/SeedCurrentUserContext.cs src/MVSoftware.Flexibill.Infrastructure/Persistence/SystemCurrentUserContext.cs)"
+    ]
+  }
+}

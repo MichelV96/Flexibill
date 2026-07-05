@@ -1,0 +1,28 @@
+@namespace MVSoftware.Flexibill.Web.Components.Pages.Dashboard
+
+<MudItem xs="12" sm="6" md="4">
+    <MudCard Outlined="true">
+        <MudCardContent>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Title</MudText>
+            <MudText Typo="Typo.h4" Color="@ValueColor">@(Value?.ToString() ?? "—")</MudText>
+        </MudCardContent>
+    </MudCard>
+</MudItem>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public int? Value { get; set; }
+
+    [Parameter]
+    public Severity Severity { get; set; } = Severity.Normal;
+
+    private Color ValueColor => Severity switch
+    {
+        Severity.Error => Color.Error,
+        Severity.Warning => Color.Warning,
+        _ => Color.Default
+    };
+}

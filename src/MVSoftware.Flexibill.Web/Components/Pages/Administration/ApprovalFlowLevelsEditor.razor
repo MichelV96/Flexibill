@@ -1,0 +1,84 @@
+@namespace MVSoftware.Flexibill.Web.Components.Pages.Administration
+@using MVSoftware.Flexibill.Application.Approvals.Queries
+
+<MudSwitch T="bool" Value="Sequential" ValueChanged="OnSequentialChangedAsync" Color="Color.Primary" Class="mb-2">
+    Volgtijdelijk (niveaus moeten in volgorde worden afgehandeld)
+</MudSwitch>
+
+@for (var i = 0; i < Levels.Count; i++)
+{
+    var index = i;
+    var level = Levels[index];
+    var lacksAccess = level.ApproverId is { } approverId
+        && Approvers.FirstOrDefault(a => a.Id == approverId) is { HasBranchAccess: false };
+
+    <div class="d-flex align-center gap-2 mb-2">
+        <MudText Style="width:24px;">@(index + 1)</MudText>
+        <MudSelect T="Guid?" Value="level.ApproverId" ValueChanged="@(value => OnApproverChangedAsync(level, value))"
+                   Label="Fiatteerder" Variant="Variant.Outlined" Dense="true" Style="max-width:260px;">
+            <MudSelectItem T="Guid?" Value="@((Guid?)null)">Elke fiatteerder van deze vestiging</MudSelectItem>
+            @foreach (var approver in Approvers)
+            {
+                <MudSelectItem T="Guid?" Value="@((Guid?)approver.Id)">@approver.DisplayName</MudSelectItem>
+            }
+        </MudSelect>
+        <MudNumericField T="decimal?" Value="level.MinimumAmount" ValueChanged="@(value => OnMinimumAmountChangedAsync(level, value))"
+                          Label="Alleen bij bedrag vanaf (leeg = altijd)" Variant="Variant.Outlined" Dense="true"
+                          Adornment="Adornment.Start" AdornmentText="€" Style="max-width:260px;" />
+        @if (lacksAccess)
+        {
+            <MudTooltip Text="Deze gebruiker heeft geen toegang tot deze vestiging.">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" />
+            </MudTooltip>
+        }
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => RemoveLevelAsync(index))"
+                       Disabled="@(Levels.Count <= 1)" />
+    </div>
+}
+
+<MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" OnClick="AddLevelAsync">Niveau toevoegen</MudButton>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<ApprovalFlowLevelEditModel> Levels { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<List<ApprovalFlowLevelEditModel>> LevelsChanged { get; set; }
+
+    [Parameter]
+    public bool Sequential { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> SequentialChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ApproverOptionDto> Approvers { get; set; } = [];
+
+    private Task OnSequentialChangedAsync(bool value) => SequentialChanged.InvokeAsync(value);
+
+    private Task OnApproverChangedAsync(ApprovalFlowLevelEditModel level, Guid? value)
+    {
+        level.ApproverId = value;
+        return NotifyLevelsChangedAsync();
+    }
+
+    private Task OnMinimumAmountChangedAsync(ApprovalFlowLevelEditModel level, decimal? value)
+    {
+        level.MinimumAmount = value;
+        return NotifyLevelsChangedAsync();
+    }
+
+    private Task AddLevelAsync()
+    {
+        Levels.Add(new ApprovalFlowLevelEditModel());
+        return NotifyLevelsChangedAsync();
+    }
+
+    private Task RemoveLevelAsync(int index)
+    {
+        Levels.RemoveAt(index);
+        return NotifyLevelsChangedAsync();
+    }
+
+    private Task NotifyLevelsChangedAsync() => LevelsChanged.InvokeAsync(Levels);
+}

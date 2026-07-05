@@ -1,0 +1,258 @@
+@page "/administration/approval-flow"
+@attribute [Authorize(Roles = nameof(UserRole.Administrator))]
+@using MediatR
+@using MVSoftware.Flexibill.Application.Approvals.Commands
+@using MVSoftware.Flexibill.Application.Approvals.Queries
+@using MVSoftware.Flexibill.Application.Branches.Queries
+@using MVSoftware.Flexibill.Domain.Users
+@using MVSoftware.Flexibill.Web.Components.Pages.Administration
+@inject ISender Mediator
+@inject ISnackbar Snackbar
+@rendermode InteractiveServer
+
+@* Interactive Server (Technisch Ontwerp, hoofdstuk 7.1): het samenstellen van niveaus
+   met directe validatie van vestigingstoegang vraagt om live feedback, net als het
+   scherm Gebruikersbeheer. *@
+
+<PageTitle>Fiatering - Flexibill</PageTitle>
+
+@if (_overview is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudText Typo="Typo.h4" Class="mb-1">Fiatering — @_overview.BranchName</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">Instellingen gelden alleen voor deze vestiging.</MudText>
+
+    <MudPaper Class="pa-4 mb-4" Outlined="true">
+        <MudText Typo="Typo.subtitle1" Class="mb-3">Standaardflow</MudText>
+        <ApprovalFlowLevelsEditor @bind-Levels="_standardLevels" @bind-Sequential="_standardSequential"
+                                   Approvers="_overview.AvailableApprovers" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="SaveStandardFlowAsync">
+            Standaardflow opslaan
+        </MudButton>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <div class="d-flex justify-space-between align-center mb-3">
+            <MudText Typo="Typo.subtitle1">Uitzonderingen per leverancier</MudText>
+            @if (!_addingException && _overview.SuppliersWithoutException.Count > 0)
+            {
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" OnClick="StartNewException">
+                    Uitzondering toevoegen
+                </MudButton>
+            }
+        </div>
+
+        @if (_addingException)
+        {
+            <MudPaper Class="pa-3 mb-3" Outlined="true">
+                <MudSelect T="Guid?" @bind-Value="_newExceptionSupplierId" Label="Leverancier" Variant="Variant.Outlined" Class="mb-3">
+                    @foreach (var supplier in _overview.SuppliersWithoutException)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)supplier.Id)">@supplier.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <ApprovalFlowLevelsEditor @bind-Levels="_exceptionLevels" @bind-Sequential="_exceptionSequential"
+                                           Approvers="_overview.AvailableApprovers" />
+                <div class="d-flex gap-2 mt-3">
+                    <MudButton Variant="Variant.Text" OnClick="CancelException">Annuleren</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveNewExceptionAsync"
+                               Disabled="@(_newExceptionSupplierId is null)">
+                        Opslaan
+                    </MudButton>
+                </div>
+            </MudPaper>
+        }
+
+        @foreach (var exception in _overview.SupplierExceptions)
+        {
+            <MudPaper Class="pa-3 mb-2" Outlined="true">
+                @if (_editingExceptionSupplierId == exception.SupplierId)
+                {
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">@exception.SupplierName</MudText>
+                    <ApprovalFlowLevelsEditor @bind-Levels="_exceptionLevels" @bind-Sequential="_exceptionSequential"
+                                               Approvers="_overview.AvailableApprovers" />
+                    <div class="d-flex gap-2 mt-3">
+                        <MudButton Variant="Variant.Text" OnClick="CancelException">Annuleren</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="@(() => SaveExistingExceptionAsync(exception.SupplierId))">
+                            Opslaan
+                        </MudButton>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText Typo="Typo.subtitle2">@exception.SupplierName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@DescribeFlow(exception.Flow)</MudText>
+                        </div>
+                        <div>
+                            <MudButton Size="Size.Small" OnClick="@(() => StartEditException(exception))">Bewerken</MudButton>
+                            <MudButton Size="Size.Small" Color="Color.Error"
+                                       OnClick="@(() => DeleteExceptionAsync(exception.SupplierId))">
+                                Verwijderen
+                            </MudButton>
+                        </div>
+                    </div>
+                }
+            </MudPaper>
+        }
+
+        @if (_overview.SupplierExceptions.Count == 0 && !_addingException)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Nog geen uitzonderingen ingesteld.</MudText>
+        }
+    </MudPaper>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public Guid? BranchId { get; set; }
+
+    private ApprovalFlowOverviewDto? _overview;
+    private List<ApprovalFlowLevelEditModel> _standardLevels = [];
+    private bool _standardSequential;
+
+    private bool _addingException;
+    private Guid? _newExceptionSupplierId;
+    private Guid? _editingExceptionSupplierId;
+    private List<ApprovalFlowLevelEditModel> _exceptionLevels = [];
+    private bool _exceptionSequential;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var branchId = BranchId;
+        if (branchId is null)
+        {
+            var branches = await Mediator.Send(new GetBranchesOverviewQuery());
+            branchId = branches.FirstOrDefault()?.Id;
+        }
+
+        if (branchId is null)
+        {
+            _overview = null;
+            return;
+        }
+
+        _overview = await Mediator.Send(new GetApprovalFlowOverviewQuery(branchId.Value));
+        if (_overview is null)
+        {
+            return;
+        }
+
+        _standardLevels = _overview.StandardFlow.Levels.Count > 0
+            ? _overview.StandardFlow.Levels.Select(ToEditModel).ToList()
+            : [new ApprovalFlowLevelEditModel()];
+        _standardSequential = _overview.StandardFlow.RequiresSequentialApproval;
+
+        _addingException = false;
+        _editingExceptionSupplierId = null;
+    }
+
+    private static ApprovalFlowLevelEditModel ToEditModel(ApprovalFlowLevelViewDto level) =>
+        new() { ApproverId = level.RequiredApproverUserId, MinimumAmount = level.MinimumAmount };
+
+    private static string DescribeFlow(ApprovalFlowViewDto flow)
+    {
+        var count = flow.Levels.Count;
+        var order = flow.RequiresSequentialApproval ? "volgtijdelijk" : "parallel";
+        return count == 1
+            ? "1 fiatteerder nodig"
+            : $"{count} fiatteerders nodig · {order}";
+    }
+
+    private async Task SaveStandardFlowAsync()
+    {
+        if (_overview is null) return;
+
+        var levels = _standardLevels.Select(l => new ApprovalFlowLevelDto(l.ApproverId, l.MinimumAmount)).ToList();
+        var result = await Mediator.Send(new ConfigureApprovalFlowCommand(_overview.BranchId, null, levels, _standardSequential));
+
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(result.Error ?? "Opslaan is mislukt.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Standaardflow opgeslagen.", Severity.Success);
+        await LoadAsync();
+    }
+
+    private void StartNewException()
+    {
+        _addingException = true;
+        _editingExceptionSupplierId = null;
+        _newExceptionSupplierId = null;
+        _exceptionLevels = [new ApprovalFlowLevelEditModel()];
+        _exceptionSequential = false;
+    }
+
+    private void StartEditException(SupplierExceptionViewDto exception)
+    {
+        _addingException = false;
+        _editingExceptionSupplierId = exception.SupplierId;
+        _exceptionLevels = exception.Flow.Levels.Select(ToEditModel).ToList();
+        _exceptionSequential = exception.Flow.RequiresSequentialApproval;
+    }
+
+    private void CancelException()
+    {
+        _addingException = false;
+        _editingExceptionSupplierId = null;
+    }
+
+    private async Task SaveNewExceptionAsync()
+    {
+        if (_overview is null || _newExceptionSupplierId is null) return;
+
+        var levels = _exceptionLevels.Select(l => new ApprovalFlowLevelDto(l.ApproverId, l.MinimumAmount)).ToList();
+        var result = await Mediator.Send(new ConfigureApprovalFlowCommand(
+            _overview.BranchId, _newExceptionSupplierId, levels, _exceptionSequential));
+
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(result.Error ?? "Opslaan is mislukt.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Uitzondering opgeslagen.", Severity.Success);
+        await LoadAsync();
+    }
+
+    private async Task SaveExistingExceptionAsync(Guid supplierId)
+    {
+        if (_overview is null) return;
+
+        var levels = _exceptionLevels.Select(l => new ApprovalFlowLevelDto(l.ApproverId, l.MinimumAmount)).ToList();
+        var result = await Mediator.Send(new ConfigureApprovalFlowCommand(_overview.BranchId, supplierId, levels, _exceptionSequential));
+
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(result.Error ?? "Opslaan is mislukt.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Uitzondering opgeslagen.", Severity.Success);
+        await LoadAsync();
+    }
+
+    private async Task DeleteExceptionAsync(Guid supplierId)
+    {
+        if (_overview is null) return;
+
+        var result = await Mediator.Send(new DeleteSupplierExceptionCommand(_overview.BranchId, supplierId));
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(result.Error ?? "Verwijderen is mislukt.", Severity.Error);
+            return;
+        }
+
+        Snackbar.Add("Uitzondering verwijderd.", Severity.Success);
+        await LoadAsync();
+    }
+}

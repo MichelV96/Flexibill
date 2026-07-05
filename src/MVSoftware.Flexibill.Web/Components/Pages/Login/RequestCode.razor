@@ -1,0 +1,55 @@
+@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using MediatR
+@using MVSoftware.Flexibill.Application.Authentication.Commands
+@inject ISender Mediator
+@inject NavigationManager Navigation
+
+@* Static SSR (geen @@rendermode): een simpele twee-staps formulierflow heeft geen
+   continue interactiviteit nodig (Technisch Ontwerp, hoofdstuk 7.1) - en alleen in
+   static SSR is HttpContext direct beschikbaar om straks (op /login/verify) de
+   cookie-sign-in te kunnen doen (hoofdstuk 9.1). *@
+
+<PageTitle>Inloggen - Flexibill</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8" Elevation="2">
+        <MudText Typo="Typo.h5" Class="mb-2">Inloggen</MudText>
+        <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
+            Vul je e-mailadres in, dan sturen we je een inlogcode.
+        </MudText>
+
+        <EditForm Model="Model" FormName="request-otp" OnValidSubmit="HandleSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <MudTextField name="Model.Email" @bind-Value="Model.Email" Label="E-mailadres" Placeholder="naam@bedrijf.nl"
+                          InputType="InputType.Email" Variant="Variant.Outlined" Class="mb-1" Required="true"
+                          For="() => Model.Email" />
+
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                       FullWidth="true" Class="mt-4">
+                Code versturen
+            </MudButton>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [SupplyParameterFromForm]
+    public RequestCodeFormModel Model { get; set; } = new();
+
+    private async Task HandleSubmitAsync()
+    {
+        // UC-L1, stap 1-2. De handler geeft bewust altijd hetzelfde resultaat terug,
+        // ongeacht of het e-mailadres bestaat (FO 4.2) - dus we navigeren altijd door.
+        await Mediator.Send(new RequestOtpCommand(Model.Email));
+        Navigation.NavigateTo($"/login/verify?email={Uri.EscapeDataString(Model.Email)}");
+    }
+
+    public sealed class RequestCodeFormModel
+    {
+        [Required(ErrorMessage = "Vul je e-mailadres in.")]
+        [EmailAddress(ErrorMessage = "Dit is geen geldig e-mailadres.")]
+        public string Email { get; set; } = string.Empty;
+    }
+}

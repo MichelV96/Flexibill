@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\MVSoftware.Flexibill.Application\MVSoftware.Flexibill.Application.csproj" />
+    <ProjectReference Include="..\MVSoftware.Flexibill.Infrastructure\MVSoftware.Flexibill.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="MudBlazor" />
+    <!-- Nodig om `dotnet ef migrations add` te kunnen draaien met Web als startup-project -
+         Infrastructure heeft dit al, maar met PrivateAssets="all" (bewust niet transitief). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

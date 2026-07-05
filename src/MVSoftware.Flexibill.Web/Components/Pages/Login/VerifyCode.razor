@@ -1,0 +1,93 @@
+@page "/login/verify"
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using MediatR
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using MVSoftware.Flexibill.Application.Authentication.Commands
+@inject ISender Mediator
+@inject NavigationManager Navigation
+
+<PageTitle>Voer je code in - Flexibill</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8" Elevation="2">
+        <MudText Typo="Typo.h5" Class="mb-2">Voer je code in</MudText>
+        <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
+            We hebben een code gestuurd naar @Email.
+        </MudText>
+
+        @if (ErrorMessage is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@ErrorMessage</MudAlert>
+        }
+
+        <EditForm Model="Model" FormName="validate-otp" OnValidSubmit="HandleSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <MudTextField name="Model.Code" @bind-Value="Model.Code" Label="Inlogcode" Placeholder="123456" MaxLength="6"
+                          Variant="Variant.Outlined" Class="mb-1" Required="true" For="() => Model.Code" />
+
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                       FullWidth="true" Class="mt-4">
+                Inloggen
+            </MudButton>
+        </EditForm>
+
+        <MudText Typo="Typo.body2" Class="mt-4">
+            Geen code ontvangen?
+            <MudLink Href="@($"/login?email={Uri.EscapeDataString(Email)}")">Opnieuw versturen</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string Email { get; set; } = string.Empty;
+
+    [SupplyParameterFromForm]
+    public VerifyCodeFormModel Model { get; set; } = new();
+
+    // Alleen beschikbaar tijdens static SSR van de initiële request - precies waarom
+    // deze pagina's geen @@rendermode hebben (Technisch Ontwerp, hoofdstuk 7.1/9.1).
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; } = default!;
+
+    private string? ErrorMessage;
+
+    private async Task HandleSubmitAsync()
+    {
+        var result = await Mediator.Send(new ValidateOtpCommand(Email, Model.Code));
+
+        if (!result.IsSuccess || result.Value is null)
+        {
+            ErrorMessage = result.Error ?? "De code is onjuist of verlopen. Vraag een nieuwe code aan.";
+            return;
+        }
+
+        var user = result.Value;
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Name, user.DisplayName),
+            new("organization_id", user.OrganizationId.ToString()),
+        };
+        claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.ToString())));
+        claims.AddRange(user.BranchIds.Select(branchId => new Claim("branch_id", branchId.ToString())));
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+
+        // forceLoad zodat de zojuist gezette auth-cookie meteen wordt meegenomen (FO 4.2: geen "onthoud mij",
+        // maar wel een normale sessie na het inloggen).
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    public sealed class VerifyCodeFormModel
+    {
+        [Required(ErrorMessage = "Vul de code in.")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "De code bestaat uit 6 cijfers.")]
+        public string Code { get; set; } = string.Empty;
+    }
+}

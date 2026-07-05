@@ -1,0 +1,195 @@
+@page "/administration/users"
+@attribute [Authorize(Roles = nameof(UserRole.Administrator))]
+@using MediatR
+@using MVSoftware.Flexibill.Application.Branches.Queries
+@using MVSoftware.Flexibill.Application.Users.Commands
+@using MVSoftware.Flexibill.Application.Users.Queries
+@using MVSoftware.Flexibill.Domain.Users
+@inject ISender Mediator
+@inject ISnackbar Snackbar
+@rendermode InteractiveServer
+
+@* Interactive Server (Technisch Ontwerp, hoofdstuk 7.1): het in-/uitklappen van het
+   uitnodig-/bewerkpaneel en de directe rol-/vestigingskeuze vragen om live interactie,
+   net als het instelscherm voor fiateringsflows. *@
+
+<PageTitle>Gebruikers - Flexibill</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">Gebruikers</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="StartInvite">
+        Gebruiker uitnodigen
+    </MudButton>
+</div>
+
+@if (_formVisible)
+{
+    <MudPaper Class="pa-4 mb-4" Outlined="true">
+        <MudText Typo="Typo.subtitle1" Class="mb-3">@(_editingUserId is null ? "Nieuwe gebruiker uitnodigen" : "Gebruiker bewerken")</MudText>
+
+        @if (_formError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">@_formError</MudAlert>
+        }
+
+        <MudGrid>
+            @if (_editingUserId is null)
+            {
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_email" Label="E-mailadres" Placeholder="naam@bedrijf.nl"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="_displayName" Label="Naam" Variant="Variant.Outlined" />
+                </MudItem>
+            }
+            <MudItem xs="12" md="6">
+                <MudSelect T="UserRole" Label="Rollen" MultiSelection="true" Variant="Variant.Outlined" @bind-SelectedValues="_selectedRoles">
+                    @foreach (var role in Enum.GetValues<UserRole>())
+                    {
+                        <MudSelectItem T="UserRole" Value="role">@role</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudSelect T="Guid" Label="Vestigingen" MultiSelection="true" Variant="Variant.Outlined" @bind-SelectedValues="_selectedBranchIds">
+                    @foreach (var branch in _branches)
+                    {
+                        <MudSelectItem T="Guid" Value="branch.Id">@branch.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+
+        <div class="d-flex gap-2 mt-4">
+            <MudButton Variant="Variant.Text" OnClick="CancelForm">Annuleren</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitFormAsync">
+                @(_editingUserId is null ? "Uitnodiging versturen" : "Opslaan")
+            </MudButton>
+        </div>
+    </MudPaper>
+}
+
+@if (_users is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="_users" Hover="true">
+        <HeaderContent>
+            <MudTh>Naam</MudTh>
+            <MudTh>Rollen</MudTh>
+            <MudTh>Vestigingen</MudTh>
+            <MudTh>Laatste login</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Naam">
+                <MudText>@context.DisplayName</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Email</MudText>
+            </MudTd>
+            <MudTd DataLabel="Rollen">
+                @foreach (var role in context.Roles)
+                {
+                    <MudChip T="string" Size="Size.Small" Class="mr-1 mb-1">@role</MudChip>
+                }
+            </MudTd>
+            <MudTd DataLabel="Vestigingen">@string.Join(", ", context.BranchNames)</MudTd>
+            <MudTd DataLabel="Laatste login">
+                @(context.LastLoginAtUtc?.ToString("d MMM yyyy") ?? "—")
+            </MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Default)" Size="Size.Small">
+                    @(context.IsActive ? "Actief" : "Gedeactiveerd")
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudButton Size="Size.Small" OnClick="() => StartEdit(context)">Bewerken</MudButton>
+                <MudButton Size="Size.Small" Color="@(context.IsActive ? Color.Error : Color.Success)"
+                           OnClick="() => ToggleActiveAsync(context)">
+                    @(context.IsActive ? "Deactiveren" : "Activeren")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private IReadOnlyList<UserSummaryDto>? _users;
+    private IReadOnlyList<BranchOptionDto> _branches = [];
+
+    private bool _formVisible;
+    private Guid? _editingUserId;
+    private string _email = string.Empty;
+    private string _displayName = string.Empty;
+    private IReadOnlyCollection<UserRole> _selectedRoles = [];
+    private IReadOnlyCollection<Guid> _selectedBranchIds = [];
+    private string? _formError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _users = await Mediator.Send(new GetUsersOverviewQuery());
+        _branches = await Mediator.Send(new GetBranchesOverviewQuery());
+    }
+
+    private void StartInvite()
+    {
+        _editingUserId = null;
+        _email = string.Empty;
+        _displayName = string.Empty;
+        _selectedRoles = [];
+        _selectedBranchIds = [];
+        _formError = null;
+        _formVisible = true;
+    }
+
+    private void StartEdit(UserSummaryDto user)
+    {
+        _editingUserId = user.Id;
+        _selectedRoles = user.Roles.Select(Enum.Parse<UserRole>).ToList();
+        _selectedBranchIds = user.BranchIds.ToList();
+        _formError = null;
+        _formVisible = true;
+    }
+
+    private void CancelForm() => _formVisible = false;
+
+    private async Task SubmitFormAsync()
+    {
+        _formError = null;
+
+        var result = _editingUserId is null
+            ? await Mediator.Send(new InviteUserCommand(_email, _displayName, _selectedRoles.ToList(), _selectedBranchIds.ToList()))
+            : await Mediator.Send(new UpdateUserCommand(_editingUserId.Value, _selectedRoles.ToList(), _selectedBranchIds.ToList()));
+
+        if (!result.IsSuccess)
+        {
+            _formError = result.Error;
+            return;
+        }
+
+        Snackbar.Add(_editingUserId is null ? "Uitnodiging verstuurd." : "Gebruiker bijgewerkt.", Severity.Success);
+        _formVisible = false;
+        await LoadAsync();
+    }
+
+    private async Task ToggleActiveAsync(UserSummaryDto user)
+    {
+        var result = await Mediator.Send(new SetUserActiveStatusCommand(user.Id, !user.IsActive));
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add(result.Error ?? "Actie is mislukt.", Severity.Error);
+            return;
+        }
+
+        await LoadAsync();
+    }
+}
