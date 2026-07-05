@@ -18,7 +18,19 @@
       "Bash(dotnet run *)",
       "Bash(dotnet ef *)",
       "Bash(git mv *)",
-      "Bash(mv src/MVSoftware.Flexibill.Infrastructure/Persistence/SeedCurrentUserContext.cs src/MVSoftware.Flexibill.Infrastructure/Persistence/SystemCurrentUserContext.cs)"
+      "Bash(mv src/MVSoftware.Flexibill.Infrastructure/Persistence/SeedCurrentUserContext.cs src/MVSoftware.Flexibill.Infrastructure/Persistence/SystemCurrentUserContext.cs)",
+      "Bash(Address)",
+      "Bash(grep -n \"PostalAddress\\\\|`Address`\" README.md)",
+      "Bash(mkdir -p Repositories)",
+      "Bash(mv EfOrganizationRepository.cs Repositories/OrganizationRepository.cs)",
+      "Bash(mv EfBranchRepository.cs Repositories/BranchRepository.cs)",
+      "Bash(mv EfUserRepository.cs Repositories/UserRepository.cs)",
+      "Bash(mv EfSupplierRepository.cs Repositories/SupplierRepository.cs)",
+      "Bash(sqllocaldb info *)",
+      "Bash(timeout 40 dotnet run --project src/MVSoftware.Flexibill.Web --no-launch-profile)",
+      "Bash(ASPNETCORE_ENVIRONMENT=Development timeout 40 dotnet run --project src/MVSoftware.Flexibill.Web --no-launch-profile)",
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Name FROM Organizations; SELECT Email FROM Users; SELECT Name FROM Suppliers;\" -C)",
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Type, ProcessedOnUtc FROM OutboxMessages;\" -C)"
     ]
   }
 }

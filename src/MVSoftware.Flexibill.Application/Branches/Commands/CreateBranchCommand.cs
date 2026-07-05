@@ -29,9 +29,9 @@ public sealed class CreateBranchCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateBranchCommand request, CancellationToken cancellationToken)
     {
-        PostalAddress? address = string.IsNullOrWhiteSpace(request.Street) || string.IsNullOrWhiteSpace(request.City)
+        Address? address = string.IsNullOrWhiteSpace(request.Street) || string.IsNullOrWhiteSpace(request.City)
             ? null
-            : PostalAddress.Of(request.Street, request.HouseNumber ?? string.Empty, request.PostalCode ?? string.Empty, request.City);
+            : Address.Of(request.Street, request.HouseNumber ?? string.Empty, request.PostalCode ?? string.Empty, request.City);
 
         var branch = Branch.Create(currentUser.OrganizationId, request.Name, address);
 

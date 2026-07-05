@@ -46,11 +46,12 @@ var app = builder.Build();
 
 // Alleen in Development: migraties toepassen + demodata seeden (Technisch Ontwerp,
 // hoofdstuk 18 - in productie lopen migraties als aparte pipeline-stap, nooit impliciet
-// bij het opstarten van de app).
+// bij het opstarten van de app). Rechtstreeks de connection string meegeven i.p.v. via de
+// DI-container op te lossen - dat laatste zou de scoped HttpContextCurrentUserContext
+// triggeren, die buiten een HTTP-request geen HttpContext heeft.
 if (app.Environment.IsDevelopment())
 {
-    await using var seedScope = app.Services.CreateAsyncScope();
-    await DbInitializer.MigrateAndSeedAsync(seedScope.ServiceProvider, CancellationToken.None);
+    await DbInitializer.MigrateAndSeedAsync(sqlConnectionString, CancellationToken.None);
 }
 
 // Configure the HTTP request pipeline.

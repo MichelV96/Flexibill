@@ -25,7 +25,7 @@ public sealed class Supplier : Entity, ITenantEntity, IAuditable
     public ChamberOfCommerceNumber? ChamberOfCommerceNumber { get; private set; }
     public VatNumber? VatNumber { get; private set; }
     public ContactPerson? PrimaryContact { get; private set; }
-    public PostalAddress? Address { get; private set; }
+    public Address? Address { get; private set; }
     public int? PaymentTermDays { get; private set; }
     public string? Category { get; private set; }
 
@@ -59,7 +59,7 @@ public sealed class Supplier : Entity, ITenantEntity, IAuditable
         VatNumber? vatNumber,
         IEnumerable<Iban>? ibans,
         ContactPerson? primaryContact,
-        PostalAddress? address,
+        Address? address,
         int? paymentTermDays,
         string? category,
         Guid? defaultGeneralLedgerAccountId,
@@ -111,7 +111,7 @@ public sealed class Supplier : Entity, ITenantEntity, IAuditable
         ChamberOfCommerceNumber? chamberOfCommerceNumber,
         VatNumber? vatNumber,
         ContactPerson? primaryContact,
-        PostalAddress? address,
+        Address? address,
         int? paymentTermDays,
         string? category,
         Guid? defaultGeneralLedgerAccountId,

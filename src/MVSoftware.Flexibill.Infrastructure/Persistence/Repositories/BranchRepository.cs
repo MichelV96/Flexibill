@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using MVSoftware.Flexibill.Application.Common.Interfaces;
 using MVSoftware.Flexibill.Domain.Branches;
+using MVSoftware.Flexibill.Infrastructure.Persistence;
 
-namespace MVSoftware.Flexibill.Infrastructure.Persistence;
+namespace MVSoftware.Flexibill.Infrastructure.Persistence.Repositories;
 
-public sealed class EfBranchRepository(FlexibillDbContext dbContext) : IBranchRepository
+public sealed class BranchRepository(FlexibillDbContext dbContext) : IBranchRepository
 {
     public Task<Branch?> GetByIdAsync(Guid branchId, CancellationToken cancellationToken) =>
         dbContext.Branches.FirstOrDefaultAsync(b => b.Id == branchId, cancellationToken);

@@ -77,7 +77,7 @@ public class SupplierTests
             VatNumber.Of("NL123456789B01"),
             [Iban.Of("NL91ABNA0417164300")],
             ContactPerson.Of("Jan de Vries", EmailAddress.Of("jan@kantoorgroothandel.nl")),
-            PostalAddress.Of("Hoofdstraat", "1", "1234AB", "Amsterdam"),
+            Address.Of("Hoofdstraat", "1", "1234AB", "Amsterdam"),
             paymentTermDays: 30,
             category: "Kantoorartikelen",
             defaultGeneralLedgerAccountId: Guid.NewGuid(),

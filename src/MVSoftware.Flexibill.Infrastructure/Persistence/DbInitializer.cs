@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using MVSoftware.Flexibill.Application.Common.Interfaces;
 using MVSoftware.Flexibill.Domain.Branches;
 using MVSoftware.Flexibill.Domain.Common;
 using MVSoftware.Flexibill.Domain.Organizations;
 using MVSoftware.Flexibill.Domain.Suppliers;
 using MVSoftware.Flexibill.Domain.Users;
+using MVSoftware.Flexibill.Infrastructure.Persistence.Auditing;
+using MVSoftware.Flexibill.Infrastructure.Persistence.Interceptors;
 
 namespace MVSoftware.Flexibill.Infrastructure.Persistence;
 
@@ -12,17 +14,33 @@ namespace MVSoftware.Flexibill.Infrastructure.Persistence;
 /// Development-only: past migraties toe en seedt dezelfde demodata die eerder in de losse
 /// InMemory*-repositories zat (organisatie, vestiging, twee gebruikers, vier leveranciers),
 /// zodat de "Lokaal proberen"-flow uit het README blijft werken - nu tegen een echte
-/// database. Bouwt zijn eigen <see cref="FlexibillDbContext"/> met een <see
-/// cref="SystemCurrentUserContext"/> in plaats van de request-gebonden
-/// HttpContextCurrentUserContext, want seeden gebeurt buiten een HTTP-request
-/// (Technisch Ontwerp, hoofdstuk 18: in productie lopen migraties als aparte pipeline-stap).
+/// database.
+///
+/// Bouwt de <see cref="DbContextOptions{TContext}"/> en de interceptors bewust HANDMATIG op
+/// (net als <see cref="FlexibillDbContextFactory"/>) i.p.v. ze uit de DI-container op te halen:
+/// het opstarten gebeurt in een handmatig aangemaakte scope zonder HttpContext, en
+/// `AddFlexibillInfrastructure` registreert <c>AuditInterceptor</c> zo dat die (indirect, via
+/// <see cref="ICurrentUserContext"/>) de request-gebonden <c>HttpContextCurrentUserContext</c>
+/// nodig heeft - die gooit dan een exception, ook al gebruikt deze klasse zelf al een <see
+/// cref="SystemCurrentUserContext"/> voor de DbContext-constructor. Door zelf te bouwen wordt
+/// die hele DI-keten (en dus het HttpContext-probleem) vermeden (Technisch Ontwerp, hoofdstuk 18:
+/// in productie lopen migraties als aparte pipeline-stap, sowieso zonder HttpContext).
 /// </summary>
 public static class DbInitializer
 {
-    public static async Task MigrateAndSeedAsync(IServiceProvider services, CancellationToken cancellationToken)
+    public static async Task MigrateAndSeedAsync(string sqlConnectionString, CancellationToken cancellationToken)
     {
-        var options = services.GetRequiredService<DbContextOptions<FlexibillDbContext>>();
-        await using var context = new FlexibillDbContext(options, new SystemCurrentUserContext());
+        var systemUser = new SystemCurrentUserContext();
+        var dateTimeProvider = new SystemDateTimeProvider();
+
+        var options = new DbContextOptionsBuilder<FlexibillDbContext>()
+            .UseSqlServer(sqlConnectionString)
+            .AddInterceptors(
+                new AuditInterceptor(systemUser, new FixedAuditSourceProvider(AuditSource.Web), dateTimeProvider),
+                new DomainEventDispatchInterceptor(dateTimeProvider))
+            .Options;
+
+        await using var context = new FlexibillDbContext(options, systemUser);
 
         await context.Database.MigrateAsync(cancellationToken);
 

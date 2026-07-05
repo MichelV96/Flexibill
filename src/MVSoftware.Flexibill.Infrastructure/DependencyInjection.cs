@@ -5,6 +5,7 @@ using MVSoftware.Flexibill.Infrastructure.Authentication;
 using MVSoftware.Flexibill.Infrastructure.Email;
 using MVSoftware.Flexibill.Infrastructure.Persistence;
 using MVSoftware.Flexibill.Infrastructure.Persistence.Interceptors;
+using MVSoftware.Flexibill.Infrastructure.Persistence.Repositories;
 
 namespace MVSoftware.Flexibill.Infrastructure;
 
@@ -42,11 +43,11 @@ public static class DependencyInjection
 
         services.AddSingleton<IOtpService, InMemoryOtpService>();
         services.AddSingleton<IEmailSender, ConsoleEmailSender>();
-        services.AddScoped<IUserRepository, EfUserRepository>();
-        services.AddScoped<IOrganizationRepository, EfOrganizationRepository>();
-        services.AddScoped<ISupplierRepository, EfSupplierRepository>();
-        services.AddScoped<IBranchRepository, EfBranchRepository>();
-        services.AddScoped<IApprovalFlowSettingRepository, EfApprovalFlowSettingRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
+        services.AddScoped<IBranchRepository, BranchRepository>();
+        services.AddScoped<IApprovalFlowSettingRepository, ApprovalFlowSettingRepository>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 

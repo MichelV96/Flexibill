@@ -2,10 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using MVSoftware.Flexibill.Application.Common.Interfaces;
 using MVSoftware.Flexibill.Domain.Common;
 using MVSoftware.Flexibill.Domain.Users;
+using MVSoftware.Flexibill.Infrastructure.Persistence;
 
-namespace MVSoftware.Flexibill.Infrastructure.Persistence;
+namespace MVSoftware.Flexibill.Infrastructure.Persistence.Repositories;
 
-public sealed class EfUserRepository(FlexibillDbContext dbContext) : IUserRepository
+public sealed class UserRepository(FlexibillDbContext dbContext) : IUserRepository
 {
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
     {

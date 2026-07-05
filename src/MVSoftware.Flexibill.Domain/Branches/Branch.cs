@@ -12,7 +12,7 @@ public sealed class Branch : Entity, ITenantEntity, IAuditable
 {
     public Guid OrganizationId { get; private set; }
     public string Name { get; private set; } = string.Empty;
-    public PostalAddress? Address { get; private set; }
+    public Address? Address { get; private set; }
 
     public AccountingPackage? AccountingPackage { get; private set; }
     public bool IsAccountingConnected { get; private set; }
@@ -22,7 +22,7 @@ public sealed class Branch : Entity, ITenantEntity, IAuditable
     private Branch() { }
 
     /// <summary>UC-B2: Beheerder maakt een nieuwe vestiging aan.</summary>
-    public static Branch Create(Guid organizationId, string name, PostalAddress? address = null)
+    public static Branch Create(Guid organizationId, string name, Address? address = null)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -40,7 +40,7 @@ public sealed class Branch : Entity, ITenantEntity, IAuditable
         return branch;
     }
 
-    public void UpdateDetails(string name, PostalAddress? address)
+    public void UpdateDetails(string name, Address? address)
     {
         if (string.IsNullOrWhiteSpace(name))
         {

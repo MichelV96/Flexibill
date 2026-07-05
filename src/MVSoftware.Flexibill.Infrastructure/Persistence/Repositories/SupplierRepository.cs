@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using MVSoftware.Flexibill.Application.Common.Interfaces;
 using MVSoftware.Flexibill.Domain.Suppliers;
+using MVSoftware.Flexibill.Infrastructure.Persistence;
 
-namespace MVSoftware.Flexibill.Infrastructure.Persistence;
+namespace MVSoftware.Flexibill.Infrastructure.Persistence.Repositories;
 
-public sealed class EfSupplierRepository(FlexibillDbContext dbContext) : ISupplierRepository
+public sealed class SupplierRepository(FlexibillDbContext dbContext) : ISupplierRepository
 {
     public Task<int> CountDraftAsync(Guid organizationId, CancellationToken cancellationToken) =>
         dbContext.Suppliers.CountAsync(s => s.OrganizationId == organizationId && s.Status == SupplierStatus.Draft, cancellationToken);

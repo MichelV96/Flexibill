@@ -52,7 +52,7 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
     eigen filter (`BranchLinks.Any(...)`).
   - `Infrastructure/Persistence/Configurations/` - een `IEntityTypeConfiguration<T>` per aggregate; value
     objects met één scalar (`EmailAddress`/`Iban`/`ChamberOfCommerceNumber`/`VatNumber`) via `HasConversion`,
-    meervoudige (`Money`/`PostalAddress`/`ContactPerson`) via `OwnsOne`, child-entities
+    meervoudige (`Money`/`Address`/`ContactPerson`) via `OwnsOne`, child-entities
     (`InvoiceLine`/`ApprovalStep`/`SupplierBranchLink`/`ApprovalFlowLevel`) via `OwnsMany`.
     `User.Roles`/`BranchIds` (collecties van primitieven achter een read-only property) via een
     value-converter naar een comma-separated kolom.
@@ -79,8 +79,9 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
   - `Application/Common/Behaviors/TransactionBehavior.cs` (+ `IUnitOfWork`) - omvat de hele command-uitvoering
     in één EF Core-transactie (commands met meerdere repository-writes moeten atomisch zijn, inclusief hun
     outbox-rijen).
-  - `EfOrganizationRepository`/`EfBranchRepository`/`EfUserRepository`/`EfSupplierRepository`/
-    `EfApprovalFlowSettingRepository` - vervangen de gelijknamige `InMemory*`-klassen 1-op-1 (zelfde
+  - `Infrastructure/Persistence/Repositories/` - `OrganizationRepository`/`BranchRepository`/
+    `UserRepository`/`SupplierRepository`/`ApprovalFlowSettingRepository` (géén `Ef`-prefix, eigen mapje
+    voor alle repository-implementaties) - vervangen de gelijknamige `InMemory*`-klassen 1-op-1 (zelfde
     Application-interfaces, geen wijziging aan command/query handlers nodig, op `CreateBranchCommandHandler`
     na - die publiceert nooit meer rechtstreeks, dat gaat nu altijd via de outbox).
   - `FlexibillDbContextFactory` (design-time) + migraties `InitialCreate` en `AddOutboxMessages`;
@@ -90,7 +91,7 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
     - bewust overgeslagen, zie "Volgende stappen".
 - Solution + alle 11 projecten, met project-references die de Clean Architecture-laagregels volgen.
 - `Domain/Common/`: `Entity`, `ValueObject`, `Money`, `Iban`, `ChamberOfCommerceNumber`, `VatNumber`,
-  `EmailAddress`, `PostalAddress`, `ITenantEntity`, `IBranchScopedEntity`, `IAuditable`, `IDomainEvent`,
+  `EmailAddress`, `Address`, `ITenantEntity`, `IBranchScopedEntity`, `IAuditable`, `IDomainEvent`,
   `DomainException`.
 - **`Domain/Invoices/`**: de volledige `Invoice`-aggregate met de statusmachine (hoofdstuk 5.3),
   regelcodering (`InvoiceLine`) en approval-afhandeling (`ApprovalStep`, standaard- én uitzonderingsflow).

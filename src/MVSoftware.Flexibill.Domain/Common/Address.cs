@@ -1,6 +1,6 @@
 namespace MVSoftware.Flexibill.Domain.Common;
 
-public sealed class PostalAddress : ValueObject
+public sealed class Address : ValueObject
 {
     public string Street { get; }
     public string HouseNumber { get; }
@@ -8,7 +8,7 @@ public sealed class PostalAddress : ValueObject
     public string City { get; }
     public string Country { get; }
 
-    private PostalAddress(string street, string houseNumber, string postalCode, string city, string country)
+    private Address(string street, string houseNumber, string postalCode, string city, string country)
     {
         Street = street;
         HouseNumber = houseNumber;
@@ -17,12 +17,12 @@ public sealed class PostalAddress : ValueObject
         Country = country;
     }
 
-    public static PostalAddress Of(string street, string houseNumber, string postalCode, string city, string country = "NL")
+    public static Address Of(string street, string houseNumber, string postalCode, string city, string country = "NL")
     {
         if (string.IsNullOrWhiteSpace(street)) throw new ArgumentException("Street is required.", nameof(street));
         if (string.IsNullOrWhiteSpace(city)) throw new ArgumentException("City is required.", nameof(city));
 
-        return new PostalAddress(street, houseNumber, postalCode, city, country);
+        return new Address(street, houseNumber, postalCode, city, country);
     }
 
     protected override IEnumerable<object?> GetEqualityComponents()

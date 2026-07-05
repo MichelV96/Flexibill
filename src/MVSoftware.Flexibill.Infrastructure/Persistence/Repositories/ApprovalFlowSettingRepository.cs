@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using MVSoftware.Flexibill.Application.Common.Interfaces;
 using MVSoftware.Flexibill.Domain.Approvals;
+using MVSoftware.Flexibill.Infrastructure.Persistence;
 
-namespace MVSoftware.Flexibill.Infrastructure.Persistence;
+namespace MVSoftware.Flexibill.Infrastructure.Persistence.Repositories;
 
-public sealed class EfApprovalFlowSettingRepository(FlexibillDbContext dbContext) : IApprovalFlowSettingRepository
+public sealed class ApprovalFlowSettingRepository(FlexibillDbContext dbContext) : IApprovalFlowSettingRepository
 {
     public Task<ApprovalFlowSetting?> GetStandardFlowAsync(Guid branchId, CancellationToken cancellationToken) =>
         dbContext.ApprovalFlowSettings.FirstOrDefaultAsync(f => f.BranchId == branchId && f.SupplierId == null, cancellationToken);
