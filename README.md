@@ -42,6 +42,51 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
 
 ## Wat is er al ingevuld
 
+- **Flexibill-thema (MudBlazor)** - `Web/Theme/FlexibillTheme.cs`, toegepast via één
+  `<MudThemeProvider Theme="FlexibillTheme.Instance" />` in `Components/Routes.razor` (samen met
+  `MudPopoverProvider`/`MudDialogProvider`/`MudSnackbarProvider` - één registratiepunt voor de hele app,
+  ongeacht welke layout een pagina gebruikt). Teal (`#0E7C7B`) als merkkleur voor de app-bar en primaire
+  knoppen; houtskoolgrijs (`#4B5563`) als `Secondary`-kleur - dat repareert meteen een visuele bug:
+  meerdere schermen (Login/Users/ApprovalFlow/Dashboard) gebruiken `Color="Color.Secondary"` voor
+  gedempte toelichtende tekst, en MudBlazor's standaard Secondary-kleur is roze/rood (oogt als een
+  foutmelding). Geen van de bestaande schermen hoefde aangepast te worden - de themakleur zelf oplossen
+  raakt alle 6 usages in één keer.
+- **Login-flow, frisse zakelijke look + bugfix (FO 4.2, UC-L1)**:
+  - `Components/Layout/LoginLayout.razor` (+ `.razor.css`) - een aparte, minimale layout zonder
+    app-bar/navigatie speciaal voor de auth-schermen (`@layout Layout.LoginLayout` op beide pagina's),
+    met een merk-icoon + wordmark en een lichte, teal-getinte paginaondergrond i.p.v. kaal wit.
+  - `RequestCode.razor`/`VerifyCode.razor` herontworpen: iconen in de velden (envelop resp. slot),
+    de 6-cijferige inlogcode met letter-spacing/groot lettertype gestyled (`.otp-input` in `app.css`),
+    duidelijkere toelichtende tekst over de wachtwoordloze flow.
+  - **Bugfix**: een al ingelogde gebruiker die naar `/login` of `/login/verify` navigeert, werd gewoon
+    het loginformulier getoond in plaats van doorgestuurd te worden. Beide pagina's checken nu in
+    `OnInitialized` (via de al aanwezige `[CascadingParameter] HttpContext`) of
+    `User.Identity?.IsAuthenticated` al `true` is en sturen dan door naar `/`.
+  - **Uitloggen toegevoegd** (er was nog geen manier om de auth-cookie kwijt te raken): nieuwe
+    `Components/Pages/Logout.razor` (zelfde static-SSR/`[CascadingParameter] HttpContext`-patroon als
+    `RedirectToLogin.razor`) roept `HttpContext.SignOutAsync` aan en stuurt door naar `/login`. Bewust
+    een GET-pagina (net als de overige `Href`-navigatieknoppen in `MainLayout.razor`) i.p.v. een
+    antiforgery-beschermd POST-formulier - het ergste gevolg van een cross-site GET hierheen is een
+    geforceerde uitlog, geen risico dat in deze interne toepassing extra formulier-complexiteit
+    rechtvaardigt. `MainLayout.razor`'s appbar toont nu ook de ingelogde gebruikersnaam + een
+    "Uitloggen"-knop rechts (via `MudSpacer`).
+  - **Echte logo's op de inlogschermen**: `wwwroot/images/logos/logo_horizontal.png` vervangt het
+    tijdelijke `MudIcon` + tekst-wordmark in `LoginLayout.razor`.
+  - **Typografie**: Poppins voor koppen (H1-H6, sluit aan bij het geometrische "F"-wordmark in het
+    logo) + Inter voor de rest, geconfigureerd via `Theme/FlexibillTheme.cs`'s nieuwe `Typography`-
+    object (alleen `Default` en `H1`-`H6` hebben een expliciete `FontFamily` nodig - de overige
+    varianten zoals Body/Button/Caption hebben zelf geen `FontFamily` en vallen terug op `Default`).
+    Beide fonts worden geladen in `App.razor` naast het bestaande Roboto (blijft als fallback staan).
+    Gekozen na een vergelijking van 6 font-paren met de gebruiker (Poppins+Inter, Montserrat+Roboto,
+    Manrope+Inter, Nunito Sans, IBM Plex Sans, en de originele Roboto-only situatie).
+  - **Bugfix (gevonden tijdens het visueel verifiëren van de typografie)**: `MainLayout.razor` had
+    `<MudMainContent Class="pa-4">` - MudBlazor's `pa-4`-utility zet `padding: 16px !important`,
+    wat de ingebouwde `padding-top` van `MudMainContent` (die ruimte vrijhoudt voor de `Fixed`
+    `MudAppBar`) overschreef. Op elk scherm met `MainLayout` (Dashboard, Gebruikers, Vestigingen,
+    Fiatering) schoof de pagina-inhoud daardoor gedeeltelijk onder de appbar - onzichtbaar in
+    eerdere controles omdat die op de accessibility-tree draaiden (`preview_snapshot`) i.p.v. een
+    pixel-screenshot. Fix: de `pa-4`-klasse staat nu op een `<div>` binnen `MudMainContent` i.p.v.
+    op `MudMainContent` zelf.
 - **Vestigingenbeheerscherm (UC-B2, FO 3.2)** - naam/adres CRUD, naar het patroon van `Users.razor`:
   - `Application/Branches/Commands/UpdateBranchCommand.cs` + `IBranchRepository.UpdateAsync` (ontbrak
     nog); `Application/Branches/Queries/GetBranchesAdminOverviewQuery.cs` (rijker dan de bestaande,

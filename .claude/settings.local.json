@@ -32,7 +32,28 @@
       "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Name FROM Organizations; SELECT Email FROM Users; SELECT Name FROM Suppliers;\" -C)",
       "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Type, ProcessedOnUtc FROM OutboxMessages;\" -C)",
       "Bash(ASPNETCORE_ENVIRONMENT=Development timeout 25 dotnet run --project src/MVSoftware.Flexibill.Web --no-launch-profile)",
-      "Bash(mkdir -p \"C:/Users/menee/source/repos/Flexibill/.claude\")"
+      "Bash(mkdir -p \"C:/Users/menee/source/repos/Flexibill/.claude\")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(mkdir -p C:/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/mudcheck)",
+      "Bash(curl -s http://localhost:5000/login)",
+      "Bash(curl -s \"http://localhost:5000/login/verify?email=demo%40flexibill.nl\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:5000/login\")",
+      "Bash(curl -s -c __TRACKED_VAR__/flexi_cookies.txt -i http://localhost:5000/login)",
+      "Bash(curl -s -b __TRACKED_VAR__/flexi_cookies.txt -c __TRACKED_VAR__/flexi_cookies.txt http://localhost:5000/login -o __TRACKED_VAR__/login.html)",
+      "Bash(grep -o '__RequestVerificationToken[^>]*' __TRACKED_VAR__/login.html)",
+      "Bash(grep -o 'name=\"[A-Za-z.]*\"' __TRACKED_VAR__/login.html)",
+      "Bash(mkdir -p /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad)",
+      "Bash(curl -s -c /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies.txt -b /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies.txt http://localhost:5000/login -o /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/login.html)",
+      "Bash(curl -s -c /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies.txt -b /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies.txt http://localhost:5000/login/verify?email=demo%40flexibill.nl -o /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/verify.html)",
+      "Bash(curl -s -c /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies.txt -b /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies.txt -i http://localhost:5000/ -o /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/dashboard.html -D /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/dashboard_headers.txt)",
+      "Bash(find / -iname \"Logout.cs\" -path \"*MudBlazor*\" 2>/dev/null | head -5; find ~ -iname \"*.nuget*\" -maxdepth 2 2>/dev/null)",
+      "Bash(find 'C:\\\\Users\\\\menee/.nuget/packages/mudblazor/9.6.0' -iname *.dll)",
+      "Bash(grep -i \"^Logout$\")",
+      "Bash(grep -iE \"^\\(Logout|ExitToApp|PowerSettingsNew\\)$\")",
+      "Bash(grep -o '[^,{}]*mud-main-content[^,{}]*{[^}]*}' 'C:\\\\Users\\\\menee/.nuget/packages/mudblazor/9.6.0/staticwebassets/MudBlazor.min.css')",
+      "Bash(export LC_ALL=en_US.UTF-8)",
+      "Bash(export LANG=en_US.UTF-8)"
     ]
   }
 }

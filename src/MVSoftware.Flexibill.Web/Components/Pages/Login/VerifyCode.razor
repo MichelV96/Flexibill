@@ -1,4 +1,5 @@
 @page "/login/verify"
+@layout Layout.LoginLayout
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using MediatR
@@ -10,36 +11,35 @@
 
 <PageTitle>Voer je code in - Flexibill</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
-    <MudPaper Class="pa-8" Elevation="2">
-        <MudText Typo="Typo.h5" Class="mb-2">Voer je code in</MudText>
-        <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
-            We hebben een code gestuurd naar @Email.
-        </MudText>
+<MudPaper Class="pa-8 login-card" Elevation="2">
+    <MudText Typo="Typo.h5" Class="mb-2">Voer je code in</MudText>
+    <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
+        We hebben een eenmalige inlogcode gestuurd naar @Email.
+    </MudText>
 
-        @if (ErrorMessage is not null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mb-4">@ErrorMessage</MudAlert>
-        }
+    @if (ErrorMessage is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@ErrorMessage</MudAlert>
+    }
 
-        <EditForm Model="Model" FormName="validate-otp" OnValidSubmit="HandleSubmitAsync">
-            <DataAnnotationsValidator />
+    <EditForm Model="Model" FormName="validate-otp" OnValidSubmit="HandleSubmitAsync">
+        <DataAnnotationsValidator />
 
-            <MudTextField name="Model.Code" @bind-Value="Model.Code" Label="Inlogcode" Placeholder="123456" MaxLength="6"
-                          Variant="Variant.Outlined" Class="mb-1" Required="true" For="() => Model.Code" />
+        <MudTextField name="Model.Code" @bind-Value="Model.Code" Label="Inlogcode" Placeholder="123456" MaxLength="6"
+                      Variant="Variant.Outlined" Class="mb-1 otp-input" Required="true" For="() => Model.Code"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock" />
 
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
-                       FullWidth="true" Class="mt-4">
-                Inloggen
-            </MudButton>
-        </EditForm>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                   FullWidth="true" Class="mt-4">
+            Inloggen
+        </MudButton>
+    </EditForm>
 
-        <MudText Typo="Typo.body2" Class="mt-4">
-            Geen code ontvangen?
-            <MudLink Href="@($"/login?email={Uri.EscapeDataString(Email)}")">Opnieuw versturen</MudLink>
-        </MudText>
-    </MudPaper>
-</MudContainer>
+    <MudText Typo="Typo.body2" Class="mt-4">
+        Geen code ontvangen?
+        <MudLink Href="@($"/login?email={Uri.EscapeDataString(Email)}")">Opnieuw versturen</MudLink>
+    </MudText>
+</MudPaper>
 
 @code {
     [SupplyParameterFromQuery]
@@ -54,6 +54,15 @@
     public HttpContext HttpContext { get; set; } = default!;
 
     private string? ErrorMessage;
+
+    protected override void OnInitialized()
+    {
+        // Al ingelogd? Dan hoort deze gebruiker niet opnieuw op het inlogscherm te belanden.
+        if (HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
 
     private async Task HandleSubmitAsync()
     {

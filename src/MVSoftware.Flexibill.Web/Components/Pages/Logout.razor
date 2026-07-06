@@ -1,0 +1,21 @@
+@page "/logout"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject NavigationManager Navigation
+
+@* Static SSR, geen @@rendermode: zelfde patroon als RedirectToLogin.razor - deze pagina rendert
+   niets, wist direct de auth-cookie en stuurt door. Bewust een GET-pagina, net als de overige
+   navigatieknoppen in MainLayout (die ook Href gebruiken i.p.v. een POST-formulier): het ergste
+   gevolg van een cross-site GET hierheen is een geforceerde uitlog, geen risico dat een
+   antiforgery-formulier rechtvaardigt in deze interne toepassing. *@
+
+@code {
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

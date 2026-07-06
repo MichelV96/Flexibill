@@ -36,3 +36,18 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Login-flow (RequestCode.razor/VerifyCode.razor): globaal i.p.v. scoped CSS, want beide
+   pagina's delen dezelfde kaartstijl en scoped CSS geldt niet voor content die een layout
+   doorgeeft aan zijn eigen pagina's. */
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 12px;
+}
+
+.otp-input .mud-input-slot {
+    font-size: 1.5rem;
+    letter-spacing: 0.5em;
+    text-align: center;
+}

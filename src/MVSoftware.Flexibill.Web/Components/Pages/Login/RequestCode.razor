@@ -1,4 +1,5 @@
 @page "/login"
+@layout Layout.LoginLayout
 @using System.ComponentModel.DataAnnotations
 @using MediatR
 @using MVSoftware.Flexibill.Application.Authentication.Commands
@@ -12,31 +13,44 @@
 
 <PageTitle>Inloggen - Flexibill</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
-    <MudPaper Class="pa-8" Elevation="2">
-        <MudText Typo="Typo.h5" Class="mb-2">Inloggen</MudText>
-        <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
-            Vul je e-mailadres in, dan sturen we je een inlogcode.
-        </MudText>
+<MudPaper Class="pa-8 login-card" Elevation="2">
+    <MudText Typo="Typo.h5" Class="mb-2">Inloggen</MudText>
+    <MudText Typo="Typo.body2" Class="mb-6" Color="Color.Secondary">
+        Vul je e-mailadres in, dan sturen we je een eenmalige inlogcode - geen wachtwoord nodig.
+    </MudText>
 
-        <EditForm Model="Model" FormName="request-otp" OnValidSubmit="HandleSubmitAsync">
-            <DataAnnotationsValidator />
+    <EditForm Model="Model" FormName="request-otp" OnValidSubmit="HandleSubmitAsync">
+        <DataAnnotationsValidator />
 
-            <MudTextField name="Model.Email" @bind-Value="Model.Email" Label="E-mailadres" Placeholder="naam@bedrijf.nl"
-                          InputType="InputType.Email" Variant="Variant.Outlined" Class="mb-1" Required="true"
-                          For="() => Model.Email" />
+        <MudTextField name="Model.Email" @bind-Value="Model.Email" Label="E-mailadres" Placeholder="naam@bedrijf.nl"
+                      InputType="InputType.Email" Variant="Variant.Outlined" Class="mb-1" Required="true"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.MailOutline"
+                      For="() => Model.Email" />
 
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
-                       FullWidth="true" Class="mt-4">
-                Code versturen
-            </MudButton>
-        </EditForm>
-    </MudPaper>
-</MudContainer>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                   FullWidth="true" Class="mt-4">
+            Code versturen
+        </MudButton>
+    </EditForm>
+</MudPaper>
 
 @code {
     [SupplyParameterFromForm]
     public RequestCodeFormModel Model { get; set; } = new();
+
+    // Alleen beschikbaar tijdens static SSR van de initiële request - precies waarom deze
+    // pagina's geen @@rendermode hebben (Technisch Ontwerp, hoofdstuk 7.1/9.1).
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        // Al ingelogd? Dan hoort deze gebruiker niet opnieuw op het inlogscherm te belanden.
+        if (HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
 
     private async Task HandleSubmitAsync()
     {

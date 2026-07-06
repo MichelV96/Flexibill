@@ -1,0 +1,19 @@
+@inherits LayoutComponentBase
+
+@* Bewust geen MudAppBar/navigatie (Technisch Ontwerp, hoofdstuk 7.1): de login-flow is een
+   losstaande, gefocuste ervaring - geen menu-items die toch niet aanklikbaar zijn zolang je
+   niet bent ingelogd. MudThemeProvider/Popover/Dialog/Snackbar staan centraal in Routes.razor. *@
+
+<div class="login-page">
+    <div class="login-brand">
+        <img src="images/logos/logo_horizontal.png" alt="Flexibill" class="login-brand-logo" />
+    </div>
+
+    @Body
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
