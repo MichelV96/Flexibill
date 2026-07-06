@@ -31,7 +31,7 @@ public sealed class InviteUserCommandHandler(
     {
         // FO 4.3: "E-mailadres al in gebruik... geen dubbele uitnodiging mogelijk". E-mail is
         // platformbreed uniek (het bepaalt bij het inloggen zelf al bij welke organisatie iemand hoort).
-        var existing = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var existing = await userRepository.GetByEmailAcrossOrganizationsAsync(request.Email, cancellationToken);
         if (existing is not null)
         {
             return Result<Guid>.Failure("Dit e-mailadres is al in gebruik.");

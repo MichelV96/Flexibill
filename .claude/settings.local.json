@@ -53,7 +53,19 @@
       "Bash(grep -iE \"^\\(Logout|ExitToApp|PowerSettingsNew\\)$\")",
       "Bash(grep -o '[^,{}]*mud-main-content[^,{}]*{[^}]*}' 'C:\\\\Users\\\\menee/.nuget/packages/mudblazor/9.6.0/staticwebassets/MudBlazor.min.css')",
       "Bash(export LC_ALL=en_US.UTF-8)",
-      "Bash(export LANG=en_US.UTF-8)"
+      "Bash(export LANG=en_US.UTF-8)",
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -d Flexibill -Q \"SELECT Id, Email, OrganizationId, Roles, BranchIds, IsActive FROM Users\" -W)",
+      "Bash(curl -s -c /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies_dbg.txt -b /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/cookies_dbg.txt -i http://localhost:5000/ -o /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/dashboard_dbg.html -D /c/Users/menee/AppData/Local/Temp/claude/C--Users-menee-source-repos-Flexibill/c71583e2-c88f-48c7-bcd3-da8b06bce626/scratchpad/dashboard_dbg_headers.txt)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5000/login --max-time 5)",
+      "Bash(sqllocaldb start *)",
+      "Bash(sqllocaldb stop *)",
+      "Bash(sqllocaldb delete *)",
+      "Bash(sqllocaldb create *)",
+      "Bash(tasklist //FI \"IMAGENAME eq sqlservr.exe\")",
+      "Bash(tasklist //FI \"IMAGENAME eq sqllocaldb.exe\")",
+      "Bash(taskkill //F //PID 21516)",
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\mssqllocaldb\" -Q \"SELECT name FROM sys.databases\" -W)",
+      "Bash(rm \"/c/Users/menee/Flexibill.mdf\" \"/c/Users/menee/Flexibill_log.ldf\")"
     ]
   }
 }

@@ -51,6 +51,34 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
   gedempte toelichtende tekst, en MudBlazor's standaard Secondary-kleur is roze/rood (oogt als een
   foutmelding). Geen van de bestaande schermen hoefde aangepast te worden - de themakleur zelf oplossen
   raakt alle 6 usages in één keer.
+- **Kritieke bugfix: `FlexibillDbContext`'s multi-tenancy query filters bevroren de allereerste
+  `ICurrentUserContext`-instantie van het hele procesleven** (`Persistence/FlexibillDbContext.cs`).
+  EF Core cachet het gebouwde model (inclusief global query filters) per DbContext-*type*, voor de
+  hele levensduur van het proces - `OnModelCreating` draait dus maar één keer, niet één keer per
+  request. De filters bouwden hun expressiebomen met `Expression.Constant(currentUserContext)` -
+  dat bevriest de SPECIFIEKE service-instantie van het allereerste moment dat een `FlexibillDbContext`
+  ooit werd aangemaakt (typisch de niet-ingelogde `RequestOtpCommand`-aanroep op het inlogscherm) in
+  het model, voor de rest van het procesleven. Elke latere, correct per-request geïnjecteerde
+  `ICurrentUserContext` werd door de query filter genegeerd; in plaats daarvan werd steeds de
+  bevroren, vaak niet-ingelogde instantie gebruikt - wat een intermittente "geen organization_id-
+  claim"-crash gaf die sterk leek op een Blazor-renderrace (twee renderpassen, waarvan er één de
+  claims leek te missen), maar dat in werkelijkheid niet was. Uitgebreid gereproduceerd met losse
+  curl-cycli (niet alleen browser-tests) om zeker te zijn dat het geen browser-/timingartefact was.
+  **Fix**: de expressiebomen gebruiken nu `Expression.Constant(this)` (de DbContext-instantie zelf)
+  met property-access naar een nieuwe `CurrentUserContext`-property, i.p.v. de service rechtstreeks
+  te bevriezen. EF Core herkent een `ConstantExpression` die de DbContext-instantie zelf bevat
+  expliciet en vervangt die bij elke query-uitvoering door de echte, huidige instantie - het
+  officiële, door Microsoft gedocumenteerde patroon voor instance-state in global query filters,
+  en NIET gevoelig voor modelcaching.
+- **`IUserRepository.GetByEmailAsync` hernoemd naar `GetByEmailAcrossOrganizationsAsync`**: de
+  methode gebruikt bewust `IgnoreQueryFilters()` (e-mail is platformbreed uniek en bepaalt bij het
+  inloggen zelf al bij welke organisatie iemand hoort - er is op dat moment nog geen "huidige
+  organisatie" om op te filteren), maar dat was aan de oude naam/aanroepplek niet te zien. Een
+  toekomstige aanroeper die een tenant-gescoopte "zoek gebruiker op e-mail binnen mijn organisatie"
+  verwachtte, zou stilzwijgend organisatie-overschrijdende resultaten hebben gekregen. De nieuwe
+  naam + XML-doc op `IUserRepository` maken dit nu duidelijk op de aanroepplek zelf, niet pas in de
+  implementatie. Alle 3 aanroepers (`RequestOtpCommand`, `ValidateOtpCommand`, `InviteUserCommand`)
+  hebben deze organisatie-overschrijdende lookup ook daadwerkelijk nodig.
 - **Login-flow, frisse zakelijke look + bugfix (FO 4.2, UC-L1)**:
   - `Components/Layout/LoginLayout.razor` (+ `.razor.css`) - een aparte, minimale layout zonder
     app-bar/navigatie speciaal voor de auth-schermen (`@layout Layout.LoginLayout` op beide pagina's),
@@ -99,7 +127,8 @@ in productie lopen migraties als losse pipeline-stap (Technisch Ontwerp, hoofdst
 - **Twee bugfixes, gevonden tijdens het voor het eerst echt in de browser doorlopen van de login-flow na
   de EF Core-migratie** (build + unit tests waren al die tijd groen, maar niemand had de UI zelf
   geopend):
-  - `UserRepository.GetByEmailAsync` gebruikt nu `IgnoreQueryFilters()`: `RequestOtpCommand`/
+  - `UserRepository.GetByEmailAcrossOrganizationsAsync` (destijds `GetByEmailAsync`, zie de latere
+    hernoeming verderop) gebruikt `IgnoreQueryFilters()`: `RequestOtpCommand`/
     `ValidateOtpCommand` zoeken een gebruiker op e-mailadres **vóórdat** er een ingelogde
     gebruiker (en dus een `OrganizationId` voor de tenant-queryfilter) bestaat - een kip-en-ei-
     probleem dat elke inlogpoging deed crashen.

@@ -8,13 +8,11 @@ namespace MVSoftware.Flexibill.Infrastructure.Persistence.Repositories;
 
 public sealed class UserRepository(FlexibillDbContext dbContext) : IUserRepository
 {
-    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
+    public Task<User?> GetByEmailAcrossOrganizationsAsync(string email, CancellationToken cancellationToken)
     {
-        // RequestOtpCommand/ValidateOtpCommand roepen dit aan VOORDAT er een ingelogde gebruiker
-        // (en dus een OrganizationId) bestaat - dat is precies het doel van deze lookup, de
-        // gebruiker (en daarmee zijn tenant) vinden op basis van e-mailadres. De "Tenant"-
-        // queryfilter (hoofdstuk 4.1) zou hier ICurrentUserContext.OrganizationId nodig hebben,
-        // wat op dit punt nog niet bestaat - vandaar bewust IgnoreQueryFilters().
+        // IgnoreQueryFilters() is bewust en staat hier niet toevallig: zie de XML-doc op
+        // IUserRepository.GetByEmailAcrossOrganizationsAsync voor de volledige uitleg (de
+        // methodenaam is bedoeld om dit al bij het aanroepen duidelijk te maken, niet pas hier).
         var target = EmailAddress.Of(email);
         return dbContext.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == target, cancellationToken);
     }

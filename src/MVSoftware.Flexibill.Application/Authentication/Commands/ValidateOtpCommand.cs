@@ -30,7 +30,7 @@ public sealed class ValidateOtpCommandHandler(
             return Result<AuthenticatedUser>.Failure("De code is onjuist of verlopen. Vraag een nieuwe code aan.");
         }
 
-        var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var user = await userRepository.GetByEmailAcrossOrganizationsAsync(request.Email, cancellationToken);
         if (user is null || !user.IsActive)
         {
             return Result<AuthenticatedUser>.Failure("De code is onjuist of verlopen. Vraag een nieuwe code aan.");

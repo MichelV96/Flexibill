@@ -25,7 +25,7 @@ public sealed class RequestOtpCommandHandler(
     {
         // FO 4.2 / UC-L1: bij een onbekend e-mailadres geven we bewust dezelfde,
         // generieke uitkomst terug - we lekken niet of een account bestaat.
-        var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        var user = await userRepository.GetByEmailAcrossOrganizationsAsync(request.Email, cancellationToken);
         if (user is not null && user.IsActive)
         {
             var code = await otpService.GenerateCodeAsync(request.Email, cancellationToken);

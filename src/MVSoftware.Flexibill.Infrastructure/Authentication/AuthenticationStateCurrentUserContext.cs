@@ -19,34 +19,27 @@ namespace MVSoftware.Flexibill.Infrastructure.Authentication;
 /// `AddCascadingAuthenticationState()`, Web/Program.cs) is juist ontworpen om de
 /// authenticatiestatus correct over beide renderfases heen te laten werken.
 ///
-/// `GetAuthenticationStateAsync()` synchroon opvragen is hier veilig: deze klasse wordt alleen
-/// aangeroepen ná `AuthorizeRouteView`/`[Authorize]`, dus de state is dan al opgelost (anders was
-/// de gebruiker al naar `RedirectToLogin` gestuurd) - de Task is al voltooid, er wordt niet echt
-/// geblokkeerd.
+/// `GetAuthenticationStateAsync()` wordt bewust pas bij gebruik van een property aangeroepen
+/// (niet gecachet in de constructor) zodat altijd de op-dat-moment actuele state wordt gelezen.
 /// </summary>
-public sealed class AuthenticationStateCurrentUserContext : ICurrentUserContext
+public sealed class AuthenticationStateCurrentUserContext(AuthenticationStateProvider authenticationStateProvider) : ICurrentUserContext
 {
-    private readonly ClaimsPrincipal _principal;
+    private ClaimsPrincipal Principal =>
+        authenticationStateProvider.GetAuthenticationStateAsync().GetAwaiter().GetResult().User;
 
-    public AuthenticationStateCurrentUserContext(AuthenticationStateProvider authenticationStateProvider)
-    {
-        var authenticationState = authenticationStateProvider.GetAuthenticationStateAsync().GetAwaiter().GetResult();
-        _principal = authenticationState.User;
-    }
-
-    public Guid UserId => Guid.Parse(_principal.FindFirstValue(ClaimTypes.NameIdentifier)
+    public Guid UserId => Guid.Parse(Principal.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? throw new InvalidOperationException("The current user has no NameIdentifier claim."));
 
-    public Guid OrganizationId => Guid.Parse(_principal.FindFirstValue("organization_id")
+    public Guid OrganizationId => Guid.Parse(Principal.FindFirstValue("organization_id")
         ?? throw new InvalidOperationException("The current user has no organization_id claim."));
 
-    public string DisplayName => _principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
+    public string DisplayName => Principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
 
-    public IReadOnlyCollection<UserRole> Roles => _principal.FindAll(ClaimTypes.Role)
+    public IReadOnlyCollection<UserRole> Roles => Principal.FindAll(ClaimTypes.Role)
         .Select(c => Enum.Parse<UserRole>(c.Value))
         .ToList();
 
-    public IReadOnlyCollection<Guid> BranchIds => _principal.FindAll("branch_id")
+    public IReadOnlyCollection<Guid> BranchIds => Principal.FindAll("branch_id")
         .Select(c => Guid.Parse(c.Value))
         .ToList();
 
